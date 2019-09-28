@@ -1,0 +1,158 @@
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+
+  <title>data - vue</title>
+  <link rel="stylesheet" href="../style/style.css">
+  <script src="js/vue.js"></script>
+  <style>
+    body { font-size: 13px; font-family: sans-serif; }
+    .data-table { border-collapse: collapse; font-size: inherit; }
+    .data-table th,
+    .data-table td {padding: 2px 4px; border: 1px solid #eee; }
+    .active { font-weight: bold; text-decoration: underline; }
+  </style>
+</head>
+
+<body>
+  <!--
+    요구 사항: 100~200 사이의 랜덤한 list를 만들고 페이징 방식으로 노출
+      itemSize, pageSize를 변경하면 페이지 리스트가 바로 업데이트 되도록 처리하고
+      페이지와 이전/다음 버튼 클릭하면 페이지 변경되도록 이벤트 구현
+  -->
+  <div id="app">
+    <p><!-- 한 번에 보여줄 리스트 갯수[10, 20, 50], 한 번에 보여줄 페이징 버튼 수[5, 10]-->
+      <label for="item-size">Show items:</label>
+      <select v-model.number="itemSize" id="item-size"
+        @change="resetPage">
+        <option v-for="(value, index) in [10, 20, 50]" :key="index">
+          {{ value }}
+        </option>
+      </select>
+      <label for="page-size">Show pages:</label>
+      <select v-model.number="pageSize" id="page-size"
+        @change="resetPage">
+        <option v-for="(value, index) in [5, 10]" :key="index">
+          {{ value }}
+        </option>
+      </select>
+    </p>
+    <!-- 리스트 뿌리기 -->
+    <table class="data-table">
+      <tr>
+        <th>id</th>
+        <th>title</th>
+        <th>date</th>
+      </tr>
+      <tr v-for="item in items" :key="item.id">
+        <td>{{ item.id }}</td>
+        <td>{{ item.title }}</td>
+        <td>{{ item.date }}</td>
+      </tr>
+    </table>
+    <!-- 페이징 버튼 -->
+    <p class="paging" v-if="total > 0">
+      <button type="button"
+        :disabled="!pagingData.prevPage"
+        @click="onPageClick(pagingData.prevPage)">Prev</button>
+
+      <button v-for="newPage in pagingData.pages" :key="newPage"
+        :class="{ active: page === newPage }"
+        @click="onPageClick(newPage)">{{ newPage }}</button>
+
+      <button type="button"
+        :disabled="!pagingData.nextPage"
+        @click="onPageClick(pagingData.nextPage)">Next</button>
+    </p>
+    <!--총 리스트 갯수-->
+    <p>Total: {{ total }}</p>
+  </div>
+
+  <script>
+    /*
+     * TO-DO: Array.slice, Math.floor, Math.ceil, Math.min, Math.max 사용법 확인
+     */
+    function getRandomNumber(min, max) {
+      const count = max - min + 1
+      return Math.floor(Math.random() * count) + min
+    }
+
+    var app = new Vue({
+      el: '#app',
+      data: {
+        allItems: [],
+        page: 1, // 현재 페이지
+        itemSize: 10, // 한 페이지에 노출할 item 수
+        pageSize: 5 // 한번에 노출할 페이징 수
+      },
+      computed: {
+        items () {
+          const start = (this.page - 1) * this.itemSize
+          const end = Math.min(start + this.itemSize, this.allItems.length)
+          return this.allItems.slice(start, end)
+        },
+        total () {
+          return this.allItems.length
+        },
+        pagingData () {
+          // 전체 페이지 수
+          const pageCount = Math.ceil(this.total / this.itemSize)
+          // 페이지 블록(ex: [1, 2, 3, 4, 5]) 수
+          const blockCount = Math.ceil(pageCount / this.pageSize)
+          // 현재 페이지 블록이 몇 번째인지
+          const currentBlock = Math.ceil(this.page / this.pageSize)
+          // 페이지 블록 첫 페이지
+          const pageStart = (currentBlock - 1) * this.pageSize + 1
+          // 페이지 블록 마지막 페이지
+          const pageEnd = Math.min(pageStart + this.pageSize - 1, pageCount)
+          const pages = []
+
+          for (let i = pageStart; i <= pageEnd; i++) {
+            pages.push(i)
+          }
+
+          let prevPage = null
+          let nextPage = null
+
+          if (currentBlock > 1) {
+            prevPage = pages[0] - 1
+          }
+
+          if (currentBlock < blockCount) {
+            nextPage = pages[pages.length - 1] + 1
+          }
+
+          const pagingData = {
+            pages,
+            prevPage,
+            nextPage
+          }
+
+          console.log(pagingData)
+          return pagingData
+        }
+      },
+      created () {
+        const count = getRandomNumber(100, 200)
+
+        for (let i = 1; i <= count; i++) {
+          this.allItems.push({
+            id: i,
+            title: `item-${i}`,
+            date: new Date().toLocaleString('ko-KR')
+          })
+        }
+        console.log(`${count} items are created`)
+      },
+      methods: {
+        resetPage () {
+          this.page = 1
+        },
+        onPageClick (page) {
+          this.page = page
+        }
+      }
+    })
+  </script>
+</body>
+</html>
